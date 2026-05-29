@@ -8,7 +8,9 @@ require (
 	github.com/gookit/goutil v0.7.1 // indirect
 	github.com/gookit/gsr v0.1.1 // indirect
 	github.com/ilyakaznacheev/cleanenv v1.5.0 // indirect
+	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/lib/pq v1.12.3 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sync v0.11.0 // indirect

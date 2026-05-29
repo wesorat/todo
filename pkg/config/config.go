@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	HTTPServer `yaml:"server"`
-	Storage    `yaml:"postgres"`
+	Database   `yaml:"postgres"`
 }
 
 type HTTPServer struct {
@@ -18,11 +18,12 @@ type HTTPServer struct {
 	Port string `yaml:"port"`
 }
 
-type Storage struct {
+type Database struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
 	Username string `yaml:"user"`
-	Dbname   string `yaml:"dbname"`
+	DBname   string `yaml:"dbname"`
+	SSLMode  string `yaml:"ssl"`
 }
 
 func LoadConfig() *Config {

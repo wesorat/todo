@@ -1,7 +1,8 @@
 package main
 
 import (
-	"example/todo/internal/config"
+	"example/todo/pkg/config"
+	"example/todo/pkg/database"
 	"log/slog"
 	"os"
 )
@@ -12,6 +13,14 @@ func main() {
 	log := setupLogger()
 
 	log.Info("Starting todo service", slog.Any("cfg", cfg))
+
+	_, err := database.New(cfg.Database)
+	if err != nil {
+		log.Error("Failed connect to db", slog.Any("err", err))
+		return
+	}
+
+	log.Info("Ending todo service")
 
 }
 
