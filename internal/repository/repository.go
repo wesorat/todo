@@ -9,6 +9,7 @@ import (
 
 type UserRepository interface {
 	CreateUser(user domain.CreateUser) (int, error)
+	GetUser(string, string) (domain.User, error)
 }
 
 type Repository struct {

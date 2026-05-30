@@ -31,7 +31,7 @@ func (s *userService) CreateUser(user domain.CreateUser) (int, error) {
 	return id, nil
 }
 
-// TODO
+// TODO дописать хэширование
 func generatePasswordHash(password string) (string, error) {
 	return password + "_hash", nil
 }

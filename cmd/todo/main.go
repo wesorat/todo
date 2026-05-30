@@ -1,8 +1,9 @@
 package main
 
 import (
-	"example/todo/internal/domain"
+	"example/todo/internal/handler"
 	"example/todo/internal/repository"
+	"example/todo/internal/server"
 	"example/todo/internal/service"
 	"example/todo/pkg/config"
 	"example/todo/pkg/database"
@@ -25,14 +26,14 @@ func main() {
 
 	repo := repository.NewRepository(db, log)
 	service := service.NewService(repo, log)
-	service.User.CreateUser(domain.CreateUser{
-		Name:     "John123",
-		Password: "pass",
-	})
-	// repo.User.CreateUser(domain.CreateUser{
-	// 	Name:     "John",
-	// 	Password: "pass",
-	// })
+	handlers := handler.NewHandler(service, log)
+	srv := new(server.Server)
+	if err := srv.Run("8080", handlers.InitRoutes()); err != nil {
+		log.Error("Error when runnning the http server", slog.Any("err", err))
+		return
+	}
+
+	_ = service
 	_ = repo
 
 	log.Info("Ending todo service")

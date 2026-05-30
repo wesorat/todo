@@ -1,5 +1,21 @@
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR NOT NULL,
-    password_hash VARCHAR NOT NULL
+    name VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE todo_lists (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description VARCHAR(255)
+);
+
+CREATE TABLE todo_items (
+    id BIGSERIAL PRIMARY KEY,
+    list_id BIGINT NOT NULL REFERENCES todo_lists(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    done BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
