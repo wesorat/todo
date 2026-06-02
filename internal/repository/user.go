@@ -7,12 +7,12 @@ import (
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 var (
-	ErrNameExists      = errors.New("username already exists")
-	ErrUserNotFound    = errors.New("user not found")
-	ErrInvalidPassword = errors.New("invalid password")
+	ErrNameExists   = errors.New("username already exists")
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type userRepository struct {
@@ -24,13 +24,15 @@ func NewUserRepository(db *sqlx.DB, log *slog.Logger) *userRepository {
 	return &userRepository{db: db, log: log}
 }
 
-// TODO проверка на уникальность имени
 func (r *userRepository) CreateUser(user domain.CreateUser) (int, error) {
 	var id int
 	query := `INSERT INTO users (name, password_hash)  VALUES ($1, $2) RETURNING id`
 	row := r.db.QueryRow(query, user.Name, user.Password)
 	r.log.Debug("", slog.Any("row", row))
 	if err := row.Scan(&id); err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return 0, ErrNameExists
+		}
 		r.log.Error("Create user failed", slog.Any("err", err))
 		return 0, err
 	}
@@ -39,15 +41,14 @@ func (r *userRepository) CreateUser(user domain.CreateUser) (int, error) {
 
 func (r *userRepository) GetUser(name string, password string) (domain.User, error) {
 	var user domain.User
-	query := `SELECT * FROM users WHERE id = $1`
+	query := `SELECT * FROM users WHERE name = $1`
 	err := r.db.Get(&user, query, name)
 	if err != nil {
 		r.log.Error(err.Error())
 		if err == sql.ErrNoRows {
-			return user, ErrUserNotFound
+			return domain.User{}, ErrUserNotFound
 		}
-		return user, err
+		return domain.User{}, err
 	}
-	//TODO check password
 	return user, nil
 }

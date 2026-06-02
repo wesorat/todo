@@ -8,6 +8,7 @@ import (
 
 type UserService interface {
 	CreateUser(domain.CreateUser) (int, error)
+	GetUser(_, _ string) (domain.User, error)
 }
 
 type Service struct {

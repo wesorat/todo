@@ -1,9 +1,16 @@
 package service
 
 import (
+	"errors"
 	"example/todo/internal/domain"
 	"example/todo/internal/repository"
 	"log/slog"
+
+	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrInvalidPassword = errors.New("invalid password")
 )
 
 type userService struct {
@@ -31,7 +38,31 @@ func (s *userService) CreateUser(user domain.CreateUser) (int, error) {
 	return id, nil
 }
 
-// TODO дописать хэширование
+func (s *userService) GetUser(name, password string) (domain.User, error) {
+	user, err := s.repo.GetUser(name, password)
+	if err != nil {
+		if err == repository.ErrUserNotFound {
+			return domain.User{}, repository.ErrUserNotFound
+		}
+		return domain.User{}, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return domain.User{}, ErrInvalidPassword
+	}
+	return user, nil
+
+}
+
 func generatePasswordHash(password string) (string, error) {
-	return password + "_hash", nil
+	if password == "" {
+		return "", errors.New("password cannot be empty")
+	}
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytes), nil
 }
