@@ -1,7 +1,9 @@
 package service
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"example/todo/internal/domain"
@@ -153,6 +155,36 @@ func (s *authService) ParseJWT(accessToken string) (int, error) {
 
 }
 
+func (s *authService) Logout(refresh string) error {
+	refresh_hash, err := generateRefreshHash(refresh)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.RevokeRefreshByHash(refresh_hash); err != nil {
+		s.log.Error(err.Error())
+		return repository.ErrRefreshTokenNotFound
+	}
+	return nil
+}
+
+func (s *authService) LogoutAll(refresh string) error {
+	refresh_hash, err := generateRefreshHash(refresh)
+	if err != nil {
+		return nil
+	}
+	user_id, err := s.repo.GetUserIDByRefresh(refresh_hash)
+	if err != nil {
+		s.log.Error("not get user_id by refresh")
+		return err
+	}
+
+	if err := s.repo.RevokeAllRefreshByUserID(user_id); err != nil {
+		s.log.Error(err.Error())
+		return repository.ErrRefreshTokenNotFound
+	}
+	return nil
+}
+
 func generatePasswordHash(password string) (string, error) {
 	if password == "" {
 		return "", errors.New("password cannot be empty")
@@ -166,10 +198,9 @@ func generatePasswordHash(password string) (string, error) {
 }
 
 func generateRefreshHash(refersh string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(refersh), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-
-	return string(bytes), nil
+	// bytes, err := bcrypt.GenerateFromPassword([]byte(refersh), bcrypt.DefaultCost)
+	pepper := os.Getenv("refreshPepper")
+	hash := hmac.New(sha256.New, []byte(pepper))
+	hash.Write([]byte(refersh))
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

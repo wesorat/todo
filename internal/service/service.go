@@ -19,6 +19,8 @@ type AuthService interface {
 	GetUser(_, _ string) (domain.User, error)
 	SignIn(_, _ string) (Tokens, error)
 	ParseJWT(string) (int, error)
+	Logout(string) error
+	LogoutAll(string) error
 }
 
 type Service struct {

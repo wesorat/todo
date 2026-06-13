@@ -15,8 +15,9 @@ type AuthRepository interface {
 	CreateUser(user domain.CreateUser) (int, error)
 	GetUser(string, string) (domain.User, error)
 	RevokeRefreshByHash(string) error
-	RevokeRefreshByUserID(int) error
+	RevokeAllRefreshByUserID(int) error
 	SaveRefresh(int, string, time.Time) error
+	GetUserIDByRefresh(string) (int, error)
 }
 
 type Repository struct {

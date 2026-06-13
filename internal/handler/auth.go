@@ -55,14 +55,53 @@ func (h *Handler) signIn(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, map[string]string{
-		"access": tokens.JWT,
+		"access_token": tokens.JWT,
 	})
 }
 
 // обновление токена
-func (h *Handler) refresh(c *gin.Context) {}
+func (h *Handler) refresh(c *gin.Context) {
 
-// отзыв токена, очистка куки и удаление с бд
-func (h *Handler) logout(c *gin.Context) {}
+}
 
-func (h *Handler) logout_all(c *gin.Context) {}
+func (h *Handler) logout(c *gin.Context) {
+	refresh_token, err := c.Cookie("refresh_token")
+	if err != nil {
+		h.newErrorResponse(c, http.StatusUnauthorized, "refresh_token is missing")
+		return
+	}
+	if err := h.service.Auth.Logout(refresh_token); err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, "couldnt remove refresh_token")
+		return
+	}
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+	c.JSON(http.StatusOK, map[string]string{
+		"message": "logout successfully",
+	})
+}
+
+func (h *Handler) logout_all(c *gin.Context) {
+	refresh_token, err := c.Cookie("refresh_token")
+	if err != nil {
+		h.newErrorResponse(c, http.StatusUnauthorized, "refresh_token is missing")
+		return
+	}
+	if err := h.service.Auth.LogoutAll(refresh_token); err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, "couldnt remove refresh_token")
+		return
+	}
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+	c.JSON(http.StatusOK, map[string]string{
+		"message": "logout all successfully",
+	})
+}

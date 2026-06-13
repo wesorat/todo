@@ -21,6 +21,7 @@ var (
 	ErrRefreshNotAdded      = errors.New("refresh_hash not added")
 	ErrRefreshHashExists    = errors.New("refresh_hash already exists")
 	ErrRefreshTokenNotFound = errors.New("refresh_hash not found")
+	ErrRefreshTokenExpired  = errors.New("refresh expired")
 )
 
 type authRepository struct {
@@ -36,7 +37,6 @@ func (r *authRepository) CreateUser(user domain.CreateUser) (int, error) {
 	var id int
 	query := `INSERT INTO users (name, password_hash)  VALUES ($1, $2) RETURNING id`
 	row := r.db.QueryRow(query, user.Name, user.Password)
-	r.log.Debug("", slog.Any("row", row))
 	if err := row.Scan(&id); err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
 			return 0, ErrNameExists
@@ -82,6 +82,7 @@ func (r *authRepository) SaveRefresh(user_id int, refresh_hash string, expired_a
 }
 
 func (r *authRepository) RevokeRefreshByHash(refresh_hash string) error {
+	r.log.Error(refresh_hash)
 	query := `DELETE FROM refresh WHERE refresh_hash = $1`
 	result, err := r.db.Exec(query, refresh_hash)
 	if err != nil {
@@ -98,7 +99,7 @@ func (r *authRepository) RevokeRefreshByHash(refresh_hash string) error {
 	return nil
 }
 
-func (r *authRepository) RevokeRefreshByUserID(user_id int) error {
+func (r *authRepository) RevokeAllRefreshByUserID(user_id int) error {
 	query := `DELETE FROM refresh WHERE user_id = $1`
 	result, err := r.db.Exec(query, user_id)
 	if err != nil {
@@ -111,19 +112,24 @@ func (r *authRepository) RevokeRefreshByUserID(user_id int) error {
 	if rowsAffected == 0 {
 		return ErrRefreshTokenNotFound
 	}
-
 	return nil
 }
 
+type expID struct {
+	User_id    int       `db:"user_id"`
+	Expired_at time.Time `db:"expired_at"`
+}
+
 func (r *authRepository) GetUserIDByRefresh(refresh_hash string) (int, error) {
-	// проверка на годность
-	var user_id int
-	query := `SELECT user_id FROM refresh WHERE refresh_hash = $1`
-	row := r.db.QueryRow(query, refresh_hash)
-	r.log.Debug("", slog.Any("row", row))
-	if err := row.Scan(&user_id); err != nil {
+	var exp expID
+	query := `SELECT user_id, expired_at FROM refresh WHERE refresh_hash = $1`
+	err := r.db.Get(&exp, query, refresh_hash)
+	if err != nil {
+		r.log.Error(err.Error())
 		return 0, ErrRefreshTokenNotFound
 	}
-	return user_id, nil
-
+	if time.Now().After(exp.Expired_at) {
+		return 0, ErrRefreshTokenExpired
+	}
+	return exp.User_id, nil
 }
