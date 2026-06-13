@@ -6,15 +6,25 @@ import (
 	"log/slog"
 )
 
-type UserService interface {
+// сервисы списков и элементов
+// абстрактные интерфейсы
+
+type Tokens struct {
+	JWT          string
+	RefreshToken string
+}
+
+type AuthService interface {
 	CreateUser(domain.CreateUser) (int, error)
 	GetUser(_, _ string) (domain.User, error)
+	SignIn(_, _ string) (Tokens, error)
+	ParseJWT(string) (int, error)
 }
 
 type Service struct {
-	User UserService
+	Auth AuthService
 }
 
 func NewService(repo *repository.Repository, log *slog.Logger) *Service {
-	return &Service{User: NewUserService(repo.User, log)}
+	return &Service{Auth: NewAuthService(repo.User, log)}
 }

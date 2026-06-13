@@ -15,7 +15,7 @@ func (h *Handler) signUp(c *gin.Context) {
 		h.newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	id, err := h.service.User.CreateUser(user)
+	id, err := h.service.Auth.CreateUser(user)
 	if err != nil {
 		if errors.Is(err, repository.ErrNameExists) {
 			h.newErrorResponse(c, http.StatusConflict, "name already in use")
@@ -41,14 +41,28 @@ func (h *Handler) signIn(c *gin.Context) {
 		h.newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	user, err := h.service.User.GetUser(input.Name, input.Password)
+	tokens, err := h.service.Auth.SignIn(input.Name, input.Password)
 	if err != nil {
-		h.newErrorResponse(c, http.StatusBadRequest, err.Error())
+		h.newErrorResponse(c, http.StatusUnauthorized, err.Error())
 		return
 	}
-	_ = user
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    tokens.RefreshToken,
+		MaxAge:   30 * 24 * 60 * 60,
+		HttpOnly: true,
+	})
 
 	c.JSON(http.StatusOK, map[string]string{
-		"message": "logged is succesfully",
+		"access": tokens.JWT,
 	})
 }
+
+// обновление токена
+func (h *Handler) refresh(c *gin.Context) {}
+
+// отзыв токена, очистка куки и удаление с бд
+func (h *Handler) logout(c *gin.Context) {}
+
+func (h *Handler) logout_all(c *gin.Context) {}

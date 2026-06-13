@@ -19,3 +19,5 @@ CREATE TABLE todo_items (
     done BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+
