@@ -59,9 +59,20 @@ func (h *Handler) signIn(c *gin.Context) {
 	})
 }
 
-// обновление токена
 func (h *Handler) refresh(c *gin.Context) {
-
+	refresh_token, err := c.Cookie("refresh_token")
+	if err != nil {
+		h.newErrorResponse(c, http.StatusUnauthorized, "refresh_token is missing")
+		return
+	}
+	access_token, err := h.service.Auth.RenewalJWT(refresh_token)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusUnauthorized, "refresh_token is invalid")
+		return
+	}
+	c.JSON(http.StatusOK, map[string]string{
+		"token": access_token,
+	})
 }
 
 func (h *Handler) logout(c *gin.Context) {

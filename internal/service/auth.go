@@ -119,13 +119,13 @@ type StandartClaimsWithUserID struct {
 	UserID int `json:"user_id"`
 }
 
-func (s *authService) generateJWT(userID int) (string, error) {
+func (s *authService) generateJWT(user_id int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &StandartClaimsWithUserID{
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(tokenTTL).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
-		userID,
+		user_id,
 	})
 	signingKey := []byte(os.Getenv("signingKey"))
 	signedToken, err := token.SignedString(signingKey)
@@ -153,6 +153,25 @@ func (s *authService) ParseJWT(accessToken string) (int, error) {
 	}
 	return claims.UserID, nil
 
+}
+
+func (s *authService) RenewalJWT(refresh string) (string, error) {
+	refresh_hash, err := generateRefreshHash(refresh)
+	if err != nil {
+		s.log.Error(err.Error())
+		return "", err
+	}
+	user_id, err := s.repo.GetUserIDByRefresh(refresh_hash)
+	if err != nil {
+		s.log.Error(err.Error())
+		return "", err
+	}
+	access, err := s.generateJWT(user_id)
+	if err != nil {
+		s.log.Error(err.Error())
+		return "", err
+	}
+	return access, nil
 }
 
 func (s *authService) Logout(refresh string) error {

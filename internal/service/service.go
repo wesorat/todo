@@ -21,6 +21,7 @@ type AuthService interface {
 	ParseJWT(string) (int, error)
 	Logout(string) error
 	LogoutAll(string) error
+	RenewalJWT(string) (string, error)
 }
 
 type Service struct {
