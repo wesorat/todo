@@ -11,9 +11,6 @@ import (
 	"github.com/lib/pq"
 )
 
-// сохранение токена в бд
-// получение токена из бд
-// отзыв токена из бд по айди и токену
 
 var (
 	ErrNameExists           = errors.New("username already exists")

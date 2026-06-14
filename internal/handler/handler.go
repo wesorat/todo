@@ -31,6 +31,14 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		auth.POST("/logout-all", h.logout_all)
 		auth.POST("/refresh", h.refresh)
 	}
+	api := router.Group("/api")
+	api.Use(h.userIdentity)
+	{
+		lists := api.Group("/lists")
+		{
+			lists.POST("/", h.createList)
+		}
+	}
 
 	return router
 
