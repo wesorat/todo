@@ -1,0 +1,6 @@
+BEGIN TRANSACTION;
+
+doing something
+
+COMMIT;
+ROLLBACK;
