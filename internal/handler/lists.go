@@ -1,19 +1,119 @@
 package handler
 
 import (
+	"example/todo/internal/domain"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (h *Handler) createList(c *gin.Context) {
-	val, ok := c.Get("user_id")
-	if !ok {
-		h.newErrorResponse(c, http.StatusUnauthorized, "")
+	user_id := c.GetInt("user_id")
+	if user_id == 0 {
+		h.newErrorResponse(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	var input domain.CreateList
+
+	if err := c.Bind(&input); err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	input.UserID = user_id
+	list_id, err := h.service.Lists.Create(input)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, map[string]any{
+		"list_id": list_id,
+	})
+
+}
+
+func (h *Handler) getList(c *gin.Context) {
+	user_id := c.GetInt("user_id")
+	if user_id == 0 {
+		h.newErrorResponse(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	list_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, "invalid id param")
+		return
+	}
+	list, err := h.service.Lists.Get(user_id, list_id)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, map[string]any{
+		"list": list,
+	})
+}
+
+func (h *Handler) getAllList(c *gin.Context) {
+	user_id := c.GetInt("user_id")
+	if user_id == 0 {
+		h.newErrorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
+	lists, err := h.service.Lists.GetAll(user_id)
+	if err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	c.JSON(http.StatusOK, map[string]any{
-		"user_id": val,
+		"lists": lists,
 	})
+}
+
+func (h *Handler) updateList(c *gin.Context) {
+	user_id := c.GetInt("user_id")
+	if user_id == 0 {
+		h.newErrorResponse(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	list_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, "invalid id param")
+		return
+	}
+	var input domain.UpdateList
+
+	if err := c.Bind(&input); err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := h.service.Lists.Update(user_id, list_id, input.Title, input.Description); err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, map[string]any{
+		"status": "updated",
+	})
+
+}
+
+func (h *Handler) deleteList(c *gin.Context) {
+	user_id := c.GetInt("user_id")
+	if user_id == 0 {
+		h.newErrorResponse(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	list_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		h.newErrorResponse(c, http.StatusBadRequest, "invalid id param")
+		return
+	}
+	if err := h.service.Lists.Delete(user_id, list_id); err != nil {
+		h.newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, map[string]any{
+		"status": "deleted",
+	})
+
 }

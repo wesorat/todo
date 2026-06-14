@@ -25,7 +25,7 @@ func NewListsRepository(db *sqlx.DB, log *slog.Logger) *listsRepository {
 	return &listsRepository{db: db, log: log}
 }
 
-func (r *listsRepository) Create(list *domain.CreateList) (int, error) {
+func (r *listsRepository) Create(list domain.CreateList) (int, error) {
 	var list_id int
 	query := `INSERT INTO lists (user_id, title, description) VALUES ($1, $2, $3) RETURNING id`
 	row := r.db.QueryRow(query, list.UserID, list.Title, list.Description)
@@ -38,8 +38,8 @@ func (r *listsRepository) Create(list *domain.CreateList) (int, error) {
 func (r *listsRepository) Get(user_id, list_id int) (domain.List, error) {
 	var list domain.List
 	query := `SELECT * FROM lists WHERE id = $1 AND user_id = $2`
-	row := r.db.QueryRow(query, list_id, user_id)
-	if err := row.Scan(&list); err != nil {
+	err := r.db.Get(&list, query, list_id, user_id)
+	if err != nil {
 		return domain.List{}, err
 	}
 	return list, nil

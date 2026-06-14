@@ -21,7 +21,7 @@ type AuthRepository interface {
 }
 
 type ListsRepository interface {
-	Create(list *domain.CreateList) (int, error)
+	Create(list domain.CreateList) (int, error)
 	Get(user_id, list_id int) (domain.List, error)
 	GetAll(user_id int) ([]domain.List, error)
 	Update(user_id, list_id int, title, description *string) error
@@ -29,7 +29,7 @@ type ListsRepository interface {
 }
 
 type ItemsRepository interface {
-	Create(user_id, list_id int, item *domain.CreateItem) (int, error)
+	Create(user_id, list_id int, item domain.CreateItem) (int, error)
 	Get(user_id, item int) (domain.Item, error)
 	GetAll(user_id, list_id int) ([]domain.Item, error)
 	Update(user_id, item_id int, title, description string, done bool) error
@@ -46,6 +46,6 @@ func NewRepository(db *sqlx.DB, log *slog.Logger) *Repository {
 	return &Repository{
 		Auth:  NewAuthRepository(db, log),
 		Lists: NewListsRepository(db, log),
-		Items: NewItemsRepository(db, log),
+		// Items: NewItemsRepository(db, log),
 	}
 }

@@ -4,16 +4,16 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE todo_lists (
+CREATE TABLE lists (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description VARCHAR(255)
 );
 
-CREATE TABLE todo_items (
+CREATE TABLE items (
     id BIGSERIAL PRIMARY KEY,
-    list_id BIGINT NOT NULL REFERENCES todo_lists(id) ON DELETE CASCADE,
+    list_id BIGINT NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description VARCHAR(255),
     done BOOLEAN DEFAULT FALSE,
