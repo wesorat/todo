@@ -21,10 +21,10 @@ type AuthRepository interface {
 }
 
 type ListsRepository interface {
-	Create(user_id int, list *domain.CreateList) (int, error)
+	Create(list *domain.CreateList) (int, error)
 	Get(user_id, list_id int) (domain.List, error)
 	GetAll(user_id int) ([]domain.List, error)
-	Update(user_id, list_id int, title, description string) error
+	Update(user_id, list_id int, title, description *string) error
 	Delete(user_id, list_id int) error
 }
 
