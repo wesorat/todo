@@ -14,3 +14,9 @@ type CreateItem struct {
 	Done        bool      `json:"done" db:"done"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
+
+type UpdateItem struct {
+	Title       *string `json:"title" db:"title"`
+	Description *string `json:"description" db:"description"`
+	Done        *bool   `json:"done" db:"done"`
+}

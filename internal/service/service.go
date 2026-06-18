@@ -32,14 +32,24 @@ type ListService interface {
 	Delete(user_id, list_id int) error
 }
 
+type ItemService interface {
+	Create(user_id int, item domain.CreateItem) (int, error)
+	Get(user_id, item_id int) (domain.Item, error)
+	GetAll(user_id, list_id int) ([]domain.Item, error)
+	Update(user_id, item_id int, title, description *string, done *bool) error
+	Delete(user_id, item_id int) error
+}
+
 type Service struct {
-	Auth  AuthService
-	Lists ListService
+	Auth AuthService
+	List ListService
+	Item ItemService
 }
 
 func NewService(repo *repository.Repository, log *slog.Logger) *Service {
 	return &Service{
-		Auth:  NewAuthService(repo.Auth, log),
-		Lists: NewListService(repo.Lists, log),
+		Auth: NewAuthService(repo.Auth, log),
+		List: NewListService(repo.List, log),
+		Item: NewItemService(repo.Item, log),
 	}
 }

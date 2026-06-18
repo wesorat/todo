@@ -29,23 +29,23 @@ type ListsRepository interface {
 }
 
 type ItemsRepository interface {
-	Create(user_id, list_id int, item domain.CreateItem) (int, error)
-	Get(user_id, item int) (domain.Item, error)
+	Create(user_id int, item domain.CreateItem) (int, error)
+	Get(user_id, item_id int) (domain.Item, error)
 	GetAll(user_id, list_id int) ([]domain.Item, error)
-	Update(user_id, item_id int, title, description string, done bool) error
+	Update(user_id, item_id int, title, description *string, done *bool) error
 	Delete(user_id, item_id int) error
 }
 
 type Repository struct {
-	Auth  AuthRepository
-	Lists ListsRepository
-	Items ItemsRepository
+	Auth AuthRepository
+	List ListsRepository
+	Item ItemsRepository
 }
 
 func NewRepository(db *sqlx.DB, log *slog.Logger) *Repository {
 	return &Repository{
-		Auth:  NewAuthRepository(db, log),
-		Lists: NewListsRepository(db, log),
-		// Items: NewItemsRepository(db, log),
+		Auth: NewAuthRepository(db, log),
+		List: NewListsRepository(db, log),
+		Item: NewItemsRepository(db, log),
 	}
 }
