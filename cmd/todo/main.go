@@ -29,7 +29,7 @@ func main() {
 	service := service.NewService(repo, log)
 	handlers := handler.NewHandler(service, log)
 	srv := new(server.Server)
-	if err := srv.Run("8080", handlers.InitRoutes()); err != nil {
+	if err := srv.Run(cfg.HTTPServer.Port, handlers.InitRoutes()); err != nil {
 		log.Error("Error when runnning the http server", slog.Any("err", err))
 		return
 	}

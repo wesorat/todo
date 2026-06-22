@@ -1,7 +1,7 @@
 
 services:
   db:
-    container_name: db
+    container_name: todo_db
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
@@ -11,6 +11,17 @@ services:
       - 5433:5432
     volumes:
       - db_data:/var/lib/postgresql/data
+
+  app:
+    container_name: todo_app
+    build:
+      context: .
+    ports:
+      - 8000:8000
+    command:
+      - ./todo
+    depends_on:
+      - db
 
 volumes:
   db_data:

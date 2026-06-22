@@ -1,9 +1,9 @@
 server:
-  host: "localhost"
+  host: "0.0.0.0"
   port: "8000"
 postgres:
-  host: "localhost"
-  port: "5433"
+  host: "db"
+  port: "5432"
   user: "postgres"
   dbname: "todo_db"
   ssl: "disable"
