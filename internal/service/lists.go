@@ -1,9 +1,10 @@
 package service
 
 import (
-	"example/todo/internal/domain"
-	"example/todo/internal/repository"
 	"log/slog"
+
+	"github.com/wesorat/todo/internal/domain"
+	"github.com/wesorat/todo/internal/repository"
 )
 
 type listService struct {

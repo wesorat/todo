@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"example/todo/internal/domain"
 	"log/slog"
 	"time"
+
+	"github.com/wesorat/todo/internal/domain"
 
 	"github.com/jmoiron/sqlx"
 )

@@ -1,9 +1,10 @@
 package service
 
 import (
-	"example/todo/internal/domain"
-	"example/todo/internal/repository"
 	"log/slog"
+
+	"github.com/wesorat/todo/internal/domain"
+	"github.com/wesorat/todo/internal/repository"
 )
 
 type itemService struct {
@@ -32,7 +33,7 @@ func (s *itemService) Get(user_id, item_id int) (domain.Item, error) {
 	return item, nil
 
 }
-func (s *itemService) GetAll(user_id, list_id int) ([]domain.Item, error){
+func (s *itemService) GetAll(user_id, list_id int) ([]domain.Item, error) {
 	items, err := s.repo.GetAll(user_id, list_id)
 	if err != nil {
 		s.log.Error(err.Error())
@@ -40,7 +41,7 @@ func (s *itemService) GetAll(user_id, list_id int) ([]domain.Item, error){
 	}
 	return items, nil
 }
-func (s *itemService) Update(user_id, item_id int, title, description *string, done *bool) error{
+func (s *itemService) Update(user_id, item_id int, title, description *string, done *bool) error {
 	if err := s.repo.Update(user_id, item_id, title, description, done); err != nil {
 		s.log.Error(err.Error())
 		return err

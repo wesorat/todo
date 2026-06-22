@@ -1,14 +1,15 @@
 package main
 
 import (
-	"example/todo/internal/handler"
-	"example/todo/internal/repository"
-	"example/todo/internal/server"
-	"example/todo/internal/service"
-	"example/todo/pkg/config"
-	"example/todo/pkg/database"
 	"log/slog"
 	"os"
+
+	"github.com/wesorat/todo/internal/handler"
+	"github.com/wesorat/todo/internal/repository"
+	"github.com/wesorat/todo/internal/server"
+	"github.com/wesorat/todo/internal/service"
+	"github.com/wesorat/todo/pkg/config"
+	"github.com/wesorat/todo/pkg/database"
 )
 
 func main() {

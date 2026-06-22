@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"example/todo/internal/domain"
 	"net/http"
 	"strconv"
+
+	"github.com/wesorat/todo/internal/domain"
 
 	"github.com/gin-gonic/gin"
 )

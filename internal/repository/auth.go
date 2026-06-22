@@ -3,14 +3,14 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"example/todo/internal/domain"
 	"log/slog"
 	"time"
+
+	"github.com/wesorat/todo/internal/domain"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
-
 
 var (
 	ErrNameExists           = errors.New("username already exists")

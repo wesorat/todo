@@ -1,9 +1,10 @@
 package database
 
 import (
-	"example/todo/pkg/config"
 	"fmt"
 	"os"
+
+	"github.com/wesorat/todo/pkg/config"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"

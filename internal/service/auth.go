@@ -6,16 +6,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"example/todo/internal/domain"
-	"example/todo/internal/repository"
 	"log/slog"
 	"os"
 	"time"
 
+	"github.com/wesorat/todo/internal/domain"
+	"github.com/wesorat/todo/internal/repository"
+
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
-
 
 // сохранение в редис рефреша
 

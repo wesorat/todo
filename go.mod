@@ -1,4 +1,4 @@
-module example/todo
+module github.com/wesorat/todo
 
 go 1.26.3
 

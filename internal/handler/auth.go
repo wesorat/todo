@@ -2,9 +2,10 @@ package handler
 
 import (
 	"errors"
-	"example/todo/internal/domain"
-	"example/todo/internal/repository"
 	"net/http"
+
+	"github.com/wesorat/todo/internal/domain"
+	"github.com/wesorat/todo/internal/repository"
 
 	"github.com/gin-gonic/gin"
 )

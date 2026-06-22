@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"example/todo/internal/service"
 	"log/slog"
+
+	"github.com/wesorat/todo/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

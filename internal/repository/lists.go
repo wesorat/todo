@@ -2,10 +2,11 @@ package repository
 
 import (
 	"errors"
-	"example/todo/internal/domain"
 	"fmt"
 	"log/slog"
 	"strings"
+
+	"github.com/wesorat/todo/internal/domain"
 
 	"github.com/jmoiron/sqlx"
 )
