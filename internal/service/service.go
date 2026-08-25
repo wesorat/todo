@@ -47,9 +47,9 @@ type Service struct {
 	Item ItemService
 }
 
-func NewService(repo *repository.Repository, log *slog.Logger) *Service {
+func NewService(repo *repository.Repository, log *slog.Logger, signingKey, refreshPapper string) *Service {
 	return &Service{
-		Auth: NewAuthService(repo.Auth, log),
+		Auth: NewAuthService(repo.Auth, log, signingKey, refreshPapper),
 		List: NewListService(repo.List, log),
 		Item: NewItemService(repo.Item, log),
 	}

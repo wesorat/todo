@@ -30,12 +30,14 @@ var (
 )
 
 type authService struct {
-	repo repository.AuthRepository
-	log  *slog.Logger
+	repo          repository.AuthRepository
+	log           *slog.Logger
+	signingKey    string
+	refreshPapper string
 }
 
-func NewAuthService(repo repository.AuthRepository, log *slog.Logger) *authService {
-	return &authService{repo: repo, log: log}
+func NewAuthService(repo repository.AuthRepository, log *slog.Logger, signingKey, refreshPapper string) *authService {
+	return &authService{repo: repo, log: log, signingKey: signingKey, refreshPapper: refreshPapper}
 }
 
 func (s *authService) CreateUser(user domain.CreateUser) (int, error) {
@@ -82,7 +84,7 @@ func (s *authService) SignIn(name, password string) (Tokens, error) {
 		s.log.Error(err.Error())
 		return Tokens{}, err
 	}
-	refresh_hash, err := generateRefreshHash(refresh)
+	refresh_hash, err := s.generateRefreshHash(refresh)
 	if err != nil {
 		s.log.Error(err.Error())
 		return Tokens{}, err
@@ -125,8 +127,7 @@ func (s *authService) generateJWT(user_id int) (string, error) {
 		},
 		user_id,
 	})
-	signingKey := []byte(os.Getenv("signingKey"))
-	signedToken, err := token.SignedString(signingKey)
+	signedToken, err := token.SignedString(s.signingKey)
 	if err != nil {
 		return "", err
 	}
@@ -139,7 +140,7 @@ func (s *authService) ParseJWT(accessToken string) (int, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, ErrInvalidToken
 			}
-			return []byte(os.Getenv("signingKey")), nil
+			return []byte(s.signingKey), nil
 		})
 	if err != nil {
 		return 0, err
@@ -154,7 +155,7 @@ func (s *authService) ParseJWT(accessToken string) (int, error) {
 }
 
 func (s *authService) RenewalJWT(refresh string) (string, error) {
-	refresh_hash, err := generateRefreshHash(refresh)
+	refresh_hash, err := s.generateRefreshHash(refresh)
 	if err != nil {
 		s.log.Error(err.Error())
 		return "", err
@@ -173,7 +174,7 @@ func (s *authService) RenewalJWT(refresh string) (string, error) {
 }
 
 func (s *authService) Logout(refresh string) error {
-	refresh_hash, err := generateRefreshHash(refresh)
+	refresh_hash, err := s.generateRefreshHash(refresh)
 	if err != nil {
 		return err
 	}
@@ -185,7 +186,7 @@ func (s *authService) Logout(refresh string) error {
 }
 
 func (s *authService) LogoutAll(refresh string) error {
-	refresh_hash, err := generateRefreshHash(refresh)
+	refresh_hash, err := s.generateRefreshHash(refresh)
 	if err != nil {
 		return nil
 	}
@@ -214,10 +215,8 @@ func generatePasswordHash(password string) (string, error) {
 	return string(bytes), nil
 }
 
-func generateRefreshHash(refersh string) (string, error) {
-	// bytes, err := bcrypt.GenerateFromPassword([]byte(refersh), bcrypt.DefaultCost)
-	pepper := os.Getenv("refreshPepper")
-	hash := hmac.New(sha256.New, []byte(pepper))
+func (s *authService) generateRefreshHash(refersh string) (string, error) {
+	hash := hmac.New(sha256.New, []byte(s.refreshPapper))
 	hash.Write([]byte(refersh))
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
