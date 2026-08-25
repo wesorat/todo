@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/wesorat/todo/internal/handler"
 	"github.com/wesorat/todo/internal/repository"
@@ -27,8 +31,6 @@ func main() {
 
 	log.Info("Starting todo service", slog.Any("cfg", cfg))
 
-
-
 	db, err := database.New(cfg.Database)
 	if err != nil {
 		log.Error("Failed connect to db", slog.Any("err", err))
@@ -39,13 +41,23 @@ func main() {
 	service := service.NewService(repo, log, signingKey, refreshPapper)
 	handlers := handler.NewHandler(service, log)
 	srv := new(server.Server)
-	if err := srv.Run(cfg.HTTPServer.Port, handlers.InitRoutes()); err != nil {
-		log.Error("Error when runnning the http server", slog.Any("err", err))
-		return
-	}
+	go func() {
+		if err := srv.Run(cfg.HTTPServer.Port, handlers.InitRoutes()); err != nil {
+			log.Error("Error when runnning the http server", slog.Any("err", err))
+			return
+		}
+	}()
 
-	_ = service
-	_ = repo
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT)
+	<-quit
+	log.Info("Shutting down service")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("shutdown error", slog.Any("err", err))
+	}
 
 	log.Info("Ending todo service")
 
@@ -56,7 +68,6 @@ func setupLogger() *slog.Logger {
 	log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	return log
 }
-
 
 func loadSecrets() (string, string, error) {
 	missing := []string{}
@@ -70,7 +81,7 @@ func loadSecrets() (string, string, error) {
 	if refreshPepper == "" {
 		missing = append(missing, refreshPepper)
 	}
-	if dbPassword== "" {
+	if dbPassword == "" {
 		missing = append(missing, dbPassword)
 	}
 	if len(missing) != 0 {
