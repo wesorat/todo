@@ -73,9 +73,6 @@ func (r *itemsRepository) GetAll(user_id, list_id int) ([]domain.Item, error) {
 	return items, nil
 }
 func (r *itemsRepository) Update(user_id, item_id int, title, description *string, done *bool) error {
-	if err := r.ownItem(user_id, item_id); err != nil {
-		return err
-	}
 	updates := make(map[string]interface{})
 	args := []interface{}{}
 
@@ -99,8 +96,8 @@ func (r *itemsRepository) Update(user_id, item_id int, title, description *strin
 		i++
 	}
 	query = strings.TrimSuffix(query, ",")
-	query += fmt.Sprintf(" WHERE id = $%v", i)
-	args = append(args, item_id)
+	query += fmt.Sprintf(" FROM lists WHERE items.list_id = lists.id AND lists.user_id = $%v AND items.id = $%v", i, i + 1)
+	args = append(args, user_id, item_id)
 	result, err := r.db.Exec(query, args...)
 	if err != nil {
 		return err
@@ -116,22 +113,16 @@ func (r *itemsRepository) Update(user_id, item_id int, title, description *strin
 
 }
 func (r *itemsRepository) Delete(user_id, item_id int) error {
-	if err := r.ownItem(user_id, item_id); err != nil {
-		r.log.Error(err.Error())
-		return err
-	}
-	query := `DELETE FROM items WHERE id = $1`
-	result, err := r.db.Exec(query, item_id)
+	query := `DELETE FROM items USING lists WHERE items.list_id = lists.id AND lists.user_id = $1 AND items.id = $2`
+	result, err := r.db.Exec(query, user_id, item_id)
 	if err != nil {
 		return err
 	}
 	num, err := result.RowsAffected()
 	if err != nil {
-		r.log.Error(err.Error())
 		return err
 	}
 	if num == 0 {
-		r.log.Error(ErrItemNotDeleted.Error())
 		return ErrItemNotDeleted
 	}
 	return nil
@@ -151,19 +142,3 @@ func (r *itemsRepository) ownLists(user_id, list_id int) error {
 	return nil
 }
 
-func (r *itemsRepository) ownItem(user_id, item_id int) error {
-	own := false
-	checkQuery := `SELECT 1
-					FROM lists l
-					INNER JOIN items i
-						ON l.id = i.list_id
-					WHERE user_id = $1 AND i.id = $2`
-	checkRow := r.db.QueryRow(checkQuery, user_id, item_id)
-	if err := checkRow.Scan(&own); err != nil {
-		return err
-	}
-	if !own {
-		return ErrNotOwnItem
-	}
-	return nil
-}
