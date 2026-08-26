@@ -14,7 +14,7 @@ import (
 
 type AuthRepository interface {
 	CreateUser(user domain.CreateUser) (int, error)
-	GetUser(name string, password string) (domain.User, error)
+	GetUser(name string) (domain.User, error)
 	RevokeRefreshByHash(refresh_hash string) error
 	RevokeAllRefreshByUserID(user_id int) error
 	SaveRefresh(user_id int, refresh_hash string, expired_at time.Time) error

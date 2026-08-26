@@ -56,7 +56,7 @@ func (s *authService) CreateUser(user domain.CreateUser) (int, error) {
 }
 
 func (s *authService) GetUser(name, password string) (domain.User, error) {
-	user, err := s.repo.GetUser(name, password)
+	user, err := s.repo.GetUser(name)
 	if err != nil {
 		if err == repository.ErrUserNotFound {
 			return domain.User{}, repository.ErrUserNotFound
@@ -73,10 +73,14 @@ func (s *authService) GetUser(name, password string) (domain.User, error) {
 }
 
 func (s *authService) SignIn(name, password string) (Tokens, error) {
-	user, err := s.repo.GetUser(name, password)
+	user, err := s.repo.GetUser(name)
 	if err != nil {
 		s.log.Error(err.Error())
 		return Tokens{}, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return Tokens{}, ErrInvalidPassword
 	}
 	refresh, err := s.generateRefreshToken()
 	if err != nil {
@@ -87,13 +91,11 @@ func (s *authService) SignIn(name, password string) (Tokens, error) {
 	if err != nil {
 		s.log.Error(err.Error())
 		return Tokens{}, err
-
 	}
 	expired_at := time.Now().Add((refreshTokenTTL))
 	if err := s.repo.SaveRefresh(user.ID, refresh_hash, expired_at); err != nil {
 		s.log.Error(err.Error())
 		return Tokens{}, err
-
 	}
 
 	jwt, err := s.generateJWT(user.ID)
@@ -101,6 +103,7 @@ func (s *authService) SignIn(name, password string) (Tokens, error) {
 		s.log.Error(err.Error())
 		return Tokens{}, err
 	}
+
 	return Tokens{RefreshToken: refresh, JWT: jwt}, nil
 }
 
@@ -126,7 +129,7 @@ func (s *authService) generateJWT(user_id int) (string, error) {
 		},
 		user_id,
 	})
-	signedToken, err := token.SignedString(s.signingKey)
+	signedToken, err := token.SignedString([]byte(s.signingKey))
 	if err != nil {
 		return "", err
 	}

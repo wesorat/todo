@@ -44,7 +44,7 @@ func (r *authRepository) CreateUser(user domain.CreateUser) (int, error) {
 	return id, nil
 }
 
-func (r *authRepository) GetUser(name string, password string) (domain.User, error) {
+func (r *authRepository) GetUser(name string) (domain.User, error) {
 	var user domain.User
 	query := `SELECT * FROM users WHERE name = $1`
 	err := r.db.Get(&user, query, name)
