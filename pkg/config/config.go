@@ -11,6 +11,7 @@ import (
 type Config struct {
 	HTTPServer `yaml:"server"`
 	Database   `yaml:"postgres"`
+	Redis      `yaml:"redis"`
 }
 
 type HTTPServer struct {
@@ -24,6 +25,11 @@ type Database struct {
 	Username string `yaml:"user"`
 	DBname   string `yaml:"dbname"`
 	SSLMode  string `yaml:"ssl"`
+}
+
+type Redis struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
 }
 
 func LoadConfig() *Config {

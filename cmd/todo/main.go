@@ -16,6 +16,7 @@ import (
 	"github.com/wesorat/todo/internal/service"
 	"github.com/wesorat/todo/pkg/config"
 	"github.com/wesorat/todo/pkg/database"
+	"github.com/wesorat/todo/pkg/redis"
 )
 
 func main() {
@@ -28,14 +29,25 @@ func main() {
 		log.Error("Failed to load secrets", slog.Any("err", err))
 		return
 	}
-
 	log.Info("Starting todo service", slog.Any("cfg", cfg))
 
 	db, err := database.New(cfg.Database)
 	if err != nil {
 		log.Error("Failed connect to db", slog.Any("err", err))
 		return
+	} else {
+		log.Info("Connected to db")
 	}
+	defer db.Close()
+
+	rdb, err := redis.New(cfg.Redis)
+	if err != nil {
+		log.Error("Failed connect to redis", slog.Any("err", err))
+		return
+	} else {
+		log.Info("Connected to redis")
+	}
+	defer rdb.Close()
 
 	repo := repository.NewRepository(db, log)
 	service := service.NewService(repo, log, signingKey, refreshPapper)
@@ -56,9 +68,18 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Error("shutdown error", slog.Any("err", err))
+		log.Error("shutdown server error", slog.Any("err", err))
+	} else {
+		log.Info("db closed")
 	}
-
+	if err := db.Close(); err != nil {
+		log.Error("shutdown db error", slog.Any("err", err))
+	}
+	if err := rdb.Close(); err != nil {
+		log.Error("shutdown redis error", slog.Any("err", err))
+	} else {
+		log.Info("redis closed")
+	}
 	log.Info("Ending todo service")
 
 }
@@ -74,6 +95,7 @@ func loadSecrets() (string, string, error) {
 	signingKey := os.Getenv("signingKey")
 	refreshPepper := os.Getenv("refreshPepper")
 	dbPassword := os.Getenv("DB_PASSWORD")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
 
 	if signingKey == "" {
 		missing = append(missing, signingKey)
@@ -83,6 +105,9 @@ func loadSecrets() (string, string, error) {
 	}
 	if dbPassword == "" {
 		missing = append(missing, dbPassword)
+	}
+	if redisPassword == "" {
+		missing = append(missing, redisPassword)
 	}
 	if len(missing) != 0 {
 		return "", "", fmt.Errorf("not set required field, %v", strings.Join(missing, ", "))

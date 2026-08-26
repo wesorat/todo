@@ -7,4 +7,8 @@ postgres:
   user: "postgres"
   dbname: "todo_db"
   ssl: "disable"
+redis:
+  host: "redis"
+  port: "6379"
+
 
