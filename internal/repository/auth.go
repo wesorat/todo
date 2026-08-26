@@ -79,7 +79,6 @@ func (r *authRepository) SaveRefresh(user_id int, refresh_hash string, expired_a
 }
 
 func (r *authRepository) RevokeRefreshByHash(refresh_hash string) error {
-	r.log.Error(refresh_hash)
 	query := `DELETE FROM refresh WHERE refresh_hash = $1`
 	result, err := r.db.Exec(query, refresh_hash)
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/wesorat/todo/internal/domain"
@@ -216,6 +215,7 @@ func generatePasswordHash(password string) (string, error) {
 }
 
 func (s *authService) generateRefreshHash(refersh string) (string, error) {
+	// bytes, err := bcrypt.GenerateFromPassword([]byte(refersh), bcrypt.DefaultCost)
 	hash := hmac.New(sha256.New, []byte(s.refreshPapper))
 	hash.Write([]byte(refersh))
 	return hex.EncodeToString(hash.Sum(nil)), nil
