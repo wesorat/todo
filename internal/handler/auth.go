@@ -42,7 +42,7 @@ func (h *Handler) signIn(c *gin.Context) {
 		h.newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	tokens, err := h.service.Auth.SignIn(input.Name, input.Password)
+	tokens, err := h.service.Auth.SignIn(c.Request.Context(), input.Name, input.Password)
 	if err != nil {
 		h.newErrorResponse(c, http.StatusUnauthorized, err.Error())
 		return
@@ -66,7 +66,7 @@ func (h *Handler) refresh(c *gin.Context) {
 		h.newErrorResponse(c, http.StatusUnauthorized, "refresh_token is missing")
 		return
 	}
-	access_token, err := h.service.Auth.RenewalJWT(refresh_token)
+	access_token, err := h.service.Auth.RenewalJWT(c.Request.Context(), refresh_token)
 	if err != nil {
 		h.newErrorResponse(c, http.StatusUnauthorized, "refresh_token is invalid")
 		return
@@ -82,7 +82,7 @@ func (h *Handler) logout(c *gin.Context) {
 		h.newErrorResponse(c, http.StatusUnauthorized, "refresh_token is missing")
 		return
 	}
-	if err := h.service.Auth.Logout(refresh_token); err != nil {
+	if err := h.service.Auth.Logout(c.Request.Context(), refresh_token); err != nil {
 		h.newErrorResponse(c, http.StatusBadRequest, "couldnt remove refresh_token")
 		return
 	}
@@ -103,7 +103,7 @@ func (h *Handler) logout_all(c *gin.Context) {
 		h.newErrorResponse(c, http.StatusUnauthorized, "refresh_token is missing")
 		return
 	}
-	if err := h.service.Auth.LogoutAll(refresh_token); err != nil {
+	if err := h.service.Auth.LogoutAll(c.Request.Context(), refresh_token); err != nil {
 		h.newErrorResponse(c, http.StatusBadRequest, "couldnt remove refresh_token")
 		return
 	}

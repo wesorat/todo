@@ -1,14 +1,17 @@
 package service
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"log/slog"
+	"strconv"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/wesorat/todo/internal/domain"
 	"github.com/wesorat/todo/internal/repository"
 
@@ -31,12 +34,13 @@ var (
 type authService struct {
 	repo          repository.AuthRepository
 	log           *slog.Logger
+	redis         *redis.Client
 	signingKey    string
 	refreshPapper string
 }
 
-func NewAuthService(repo repository.AuthRepository, log *slog.Logger, signingKey, refreshPapper string) *authService {
-	return &authService{repo: repo, log: log, signingKey: signingKey, refreshPapper: refreshPapper}
+func NewAuthService(repo repository.AuthRepository, log *slog.Logger, redis *redis.Client, signingKey, refreshPapper string) *authService {
+	return &authService{repo: repo, log: log, signingKey: signingKey, redis: redis, refreshPapper: refreshPapper}
 }
 
 func (s *authService) CreateUser(user domain.CreateUser) (int, error) {
@@ -72,7 +76,7 @@ func (s *authService) GetUser(name, password string) (domain.User, error) {
 
 }
 
-func (s *authService) SignIn(name, password string) (Tokens, error) {
+func (s *authService) SignIn(ctx context.Context, name, password string) (Tokens, error) {
 	user, err := s.repo.GetUser(name)
 	if err != nil {
 		s.log.Error(err.Error())
@@ -97,6 +101,8 @@ func (s *authService) SignIn(name, password string) (Tokens, error) {
 		s.log.Error(err.Error())
 		return Tokens{}, err
 	}
+
+	s.cacheRefresh(ctx, user.ID, refresh_hash)
 
 	jwt, err := s.generateJWT(user.ID)
 	if err != nil {
@@ -156,18 +162,21 @@ func (s *authService) ParseJWT(accessToken string) (int, error) {
 
 }
 
-func (s *authService) RenewalJWT(refresh string) (string, error) {
+func (s *authService) RenewalJWT(ctx context.Context, refresh string) (string, error) {
 	refresh_hash, err := s.generateRefreshHash(refresh)
 	if err != nil {
 		s.log.Error(err.Error())
 		return "", err
 	}
-	user_id, err := s.repo.GetUserIDByRefresh(refresh_hash)
-	if err != nil {
-		s.log.Error(err.Error())
-		return "", err
+	userID, ok := s.getCachedRefresh(ctx, refresh_hash)
+	if !ok {
+		userID, err = s.repo.GetUserIDByRefresh(refresh_hash)
+		if err != nil {
+			return "", err
+		}
+		s.cacheRefresh(ctx, userID, refresh_hash)
 	}
-	access, err := s.generateJWT(user_id)
+	access, err := s.generateJWT(userID)
 	if err != nil {
 		s.log.Error(err.Error())
 		return "", err
@@ -175,7 +184,7 @@ func (s *authService) RenewalJWT(refresh string) (string, error) {
 	return access, nil
 }
 
-func (s *authService) Logout(refresh string) error {
+func (s *authService) Logout(ctx context.Context, refresh string) error {
 	refresh_hash, err := s.generateRefreshHash(refresh)
 	if err != nil {
 		return err
@@ -184,10 +193,11 @@ func (s *authService) Logout(refresh string) error {
 		s.log.Error(err.Error())
 		return repository.ErrRefreshTokenNotFound
 	}
+	s.uncacheRefresh(ctx, refresh_hash)
 	return nil
 }
 
-func (s *authService) LogoutAll(refresh string) error {
+func (s *authService) LogoutAll(ctx context.Context, refresh string) error {
 	refresh_hash, err := s.generateRefreshHash(refresh)
 	if err != nil {
 		return nil
@@ -202,6 +212,7 @@ func (s *authService) LogoutAll(refresh string) error {
 		s.log.Error(err.Error())
 		return repository.ErrRefreshTokenNotFound
 	}
+	s.uncacheAllRefresh(ctx, user_id)
 	return nil
 }
 
@@ -222,4 +233,42 @@ func (s *authService) generateRefreshHash(refersh string) (string, error) {
 	hash := hmac.New(sha256.New, []byte(s.refreshPapper))
 	hash.Write([]byte(refersh))
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func refreshCacheKey(hash string) string {
+	return "refresh:" + hash
+}
+
+func userSessionsKey(userID int) string {
+	return "user_sessions:" + strconv.Itoa(userID)
+}
+
+func (s *authService) getCachedRefresh(ctx context.Context, hash string) (int, bool) {
+	userID, err := s.redis.Get(ctx, refreshCacheKey(hash)).Int()
+	if err != nil {
+		return 0, false
+	}
+	return userID, true
+}
+func (s *authService) cacheRefresh(ctx context.Context, userID int, hash string) {
+	pipe := s.redis.TxPipeline()
+	pipe.Set(ctx, refreshCacheKey(hash), userID, refreshTokenTTL)
+	pipe.SAdd(ctx, userSessionsKey(userID), hash)
+	pipe.Expire(ctx, userSessionsKey(userID), refreshTokenTTL)
+	pipe.Exec(ctx)
+}
+
+func (s *authService) uncacheRefresh(ctx context.Context, hash string) {
+	s.redis.Del(ctx, refreshCacheKey(hash))
+}
+
+func (s *authService) uncacheAllRefresh(ctx context.Context, userID int) {
+	hashes, err := s.redis.SMembers(ctx, userSessionsKey(userID)).Result()
+	if err != nil {
+		return
+	}
+	for _, hash := range hashes {
+		s.redis.Del(ctx, refreshCacheKey(hash))
+	}
+	s.redis.Del(ctx, userSessionsKey(userID))
 }

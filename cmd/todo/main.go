@@ -50,7 +50,7 @@ func main() {
 	defer rdb.Close()
 
 	repo := repository.NewRepository(db, log)
-	service := service.NewService(repo, log, signingKey, refreshPapper)
+	service := service.NewService(repo, log, rdb, signingKey, refreshPapper)
 	handlers := handler.NewHandler(service, log, rdb)
 	srv := new(server.Server)
 	go func() {

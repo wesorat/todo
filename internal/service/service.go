@@ -1,14 +1,13 @@
 package service
 
 import (
+	"context"
 	"log/slog"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/wesorat/todo/internal/domain"
 	"github.com/wesorat/todo/internal/repository"
 )
-
-// сервисы списков и элементов
-// абстрактные интерфейсы
 
 type Tokens struct {
 	JWT          string
@@ -18,11 +17,11 @@ type Tokens struct {
 type AuthService interface {
 	CreateUser(domain.CreateUser) (int, error)
 	GetUser(_, _ string) (domain.User, error)
-	SignIn(_, _ string) (Tokens, error)
+	SignIn(ctx context.Context, name, password string) (Tokens, error)
 	ParseJWT(string) (int, error)
-	Logout(string) error
-	LogoutAll(string) error
-	RenewalJWT(string) (string, error)
+	Logout(ctx context.Context, refresh string) error
+	LogoutAll(ctx context.Context, refresh string) error
+	RenewalJWT(ctx context.Context, refresh string) (string, error)
 }
 
 type ListService interface {
@@ -47,9 +46,9 @@ type Service struct {
 	Item ItemService
 }
 
-func NewService(repo *repository.Repository, log *slog.Logger, signingKey, refreshPapper string) *Service {
+func NewService(repo *repository.Repository, log *slog.Logger, redis *redis.Client, signingKey, refreshPapper string) *Service {
 	return &Service{
-		Auth: NewAuthService(repo.Auth, log, signingKey, refreshPapper),
+		Auth: NewAuthService(repo.Auth, log, redis, signingKey, refreshPapper),
 		List: NewListService(repo.List, log),
 		Item: NewItemService(repo.Item, log),
 	}
