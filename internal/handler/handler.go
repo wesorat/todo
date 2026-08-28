@@ -2,7 +2,9 @@ package handler
 
 import (
 	"log/slog"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/wesorat/todo/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -14,10 +16,11 @@ import (
 type Handler struct {
 	service *service.Service
 	log     *slog.Logger
+	redis   *redis.Client
 }
 
-func NewHandler(service *service.Service, log *slog.Logger) *Handler {
-	return &Handler{service: service, log: log}
+func NewHandler(service *service.Service, log *slog.Logger, redis *redis.Client) *Handler {
+	return &Handler{service: service, log: log, redis: redis}
 }
 
 func (h *Handler) InitRoutes() *gin.Engine {
@@ -25,9 +28,9 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	auth := router.Group("/auth")
 	{
-
-		auth.POST("/sign-up", h.signUp)
-		auth.POST("/sign-in", h.signIn)
+		authLimiter := newRedisRateLimiter(h.redis, 5, time.Minute)
+		auth.POST("/sign-up", rateLimit(authLimiter), h.signUp)
+		auth.POST("/sign-in", rateLimit(authLimiter), h.signIn)
 		auth.POST("/logout", h.logout)
 		auth.POST("/logout-all", h.logout_all)
 		auth.POST("/refresh", h.refresh)

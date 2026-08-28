@@ -51,7 +51,7 @@ func main() {
 
 	repo := repository.NewRepository(db, log)
 	service := service.NewService(repo, log, signingKey, refreshPapper)
-	handlers := handler.NewHandler(service, log)
+	handlers := handler.NewHandler(service, log, rdb)
 	srv := new(server.Server)
 	go func() {
 		if err := srv.Run(cfg.HTTPServer.Port, handlers.InitRoutes()); err != nil {
